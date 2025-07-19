@@ -166,7 +166,7 @@ Add to your MCP client configuration:
 
 ### Secret Management
 
-#### `create-secret`
+#### `createsecret`
 Create a new secret with optional configuration.
 
 **Parameters:**
@@ -203,7 +203,7 @@ create_secret(
 )
 ```
 
-#### `get-secret-value`
+#### `getsecretvalue`
 Retrieve the current or specific version of a secret.
 
 **Parameters:**
@@ -224,7 +224,7 @@ get_secret_value(
 )
 ```
 
-#### `update-secret`
+#### `updatesecret`
 Update an existing secret's value, description, or encryption key.
 
 **Parameters:**
@@ -234,7 +234,7 @@ Update an existing secret's value, description, or encryption key.
 - `kms_key_id` (optional): New KMS key for encryption
 - `region` (optional): AWS region override
 
-#### `delete-secret`
+#### `deletesecret`
 Schedule a secret for deletion with recovery window.
 
 **Parameters:**
@@ -243,14 +243,14 @@ Schedule a secret for deletion with recovery window.
 - `force_delete_without_recovery` (optional): Immediate deletion (DANGEROUS)
 - `region` (optional): AWS region override
 
-#### `restore-secret`
+#### `restoresecret`
 Restore a secret that was scheduled for deletion.
 
 **Parameters:**
 - `secret_id` (required): Secret name or ARN
 - `region` (optional): AWS region override
 
-#### `list-secrets`
+#### `listsecrets`
 List secrets with optional filtering.
 
 **Parameters:**
@@ -260,7 +260,7 @@ List secrets with optional filtering.
 - `include_planned_deletion` (optional): Include secrets scheduled for deletion
 - `region` (optional): AWS region override
 
-#### `describe-secret`
+#### `describesecret`
 Get detailed metadata about a secret without retrieving its value.
 
 **Parameters:**
@@ -269,7 +269,7 @@ Get detailed metadata about a secret without retrieving its value.
 
 ### Rotation Management
 
-#### `enable-rotation`
+#### `enablerotation`
 Enable automatic rotation for a secret.
 
 **Parameters:**
@@ -279,10 +279,10 @@ Enable automatic rotation for a secret.
 - `rotate_immediately` (optional): Rotate immediately after enabling
 - `region` (optional): AWS region override
 
-#### `disable-rotation`
+#### `disablerotation`
 Disable automatic rotation for a secret.
 
-#### `rotate-secret`
+#### `rotatesecret`
 Manually trigger rotation for a secret.
 
 **Parameters:**
@@ -292,7 +292,7 @@ Manually trigger rotation for a secret.
 
 ### Utility Tools
 
-#### `get-random-password`
+#### `getrandompassword`
 Generate a cryptographically secure random password.
 
 **Parameters:**
@@ -308,7 +308,7 @@ Generate a cryptographically secure random password.
 
 ### Tag Management
 
-#### `tag-resource`
+#### `tagresource`
 Add or update tags on a secret.
 
 **Parameters:**
@@ -316,7 +316,7 @@ Add or update tags on a secret.
 - `tags` (required): List of tag objects with "Key" and "Value"
 - `region` (optional): AWS region override
 
-#### `untag-resource`
+#### `untagresource`
 Remove tags from a secret.
 
 **Parameters:**
@@ -326,10 +326,10 @@ Remove tags from a secret.
 
 ### Policy Management
 
-#### `get-resource-policy`
+#### `getresourcepolicy`
 Retrieve the resource-based policy for a secret.
 
-#### `put-resource-policy`
+#### `putresourcepolicy`
 Set or update the resource-based policy for a secret.
 
 **Parameters:**
@@ -338,7 +338,7 @@ Set or update the resource-based policy for a secret.
 - `block_public_policy` (optional): Block public access (default: true)
 - `region` (optional): AWS region override
 
-#### `delete-resource-policy`
+#### `deleteresourcepolicy`
 Remove the resource-based policy from a secret.
 
 ## Best Practices
