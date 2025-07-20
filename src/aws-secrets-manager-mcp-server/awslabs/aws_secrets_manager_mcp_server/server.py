@@ -68,6 +68,15 @@ mcp = FastMCP(
 _secrets_client: Optional[Any] = None
 
 
+def extract_field_value(value: Any, default: Any = None) -> Any:
+    """Extract actual value from Field object or return the value as-is."""
+    from pydantic.fields import FieldInfo
+    
+    if isinstance(value, FieldInfo):
+        return value.default if value.default is not ... else default
+    return value
+
+
 def get_secrets_client(region: Optional[str] = None) -> Any:
     """Get or create AWS Secrets Manager client."""
     global _secrets_client
@@ -119,7 +128,7 @@ def handle_aws_error(error: ClientError, operation: str) -> SecretsManagerRespon
     )
 
 
-@mcp.tool(name='createsecret')
+@mcp.tool(name='create-secret')
 async def create_secret(
     ctx: Context,
     name: str = Field(..., description='Name of the secret to create'),
@@ -154,6 +163,14 @@ async def create_secret(
     - Database credentials: create_secret(name="prod/db/mysql", secret_value={"username": "admin", "password": "secret123"})
     """
     try:
+        # Extract actual parameter values from Field objects
+        name = extract_field_value(name)
+        secret_value = extract_field_value(secret_value)
+        description = extract_field_value(description, None)
+        kms_key_id = extract_field_value(kms_key_id, None)
+        tags = extract_field_value(tags, None)
+        region = extract_field_value(region, None)
+        
         # Validate and prepare request
         if isinstance(secret_value, dict):
             secret_string = json.dumps(secret_value)
@@ -209,7 +226,7 @@ async def create_secret(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='getsecretvalue')
+@mcp.tool(name='get-secret-value')
 async def get_secret_value(
     ctx: Context,
     secret_id: str = Field(..., description='Name or ARN of the secret'),
@@ -236,6 +253,12 @@ async def get_secret_value(
     proper access controls are in place.
     """
     try:
+        # Extract actual parameter values from Field objects
+        secret_id = extract_field_value(secret_id)
+        version_id = extract_field_value(version_id, None)
+        version_stage = extract_field_value(version_stage, None)
+        region = extract_field_value(region, None)
+        
         client = get_secrets_client(region)
         
         # Prepare API call parameters
@@ -292,7 +315,7 @@ async def get_secret_value(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='updatesecret')
+@mcp.tool(name='update-secret')
 async def update_secret(
     ctx: Context,
     secret_id: str = Field(..., description='Name or ARN of the secret to update'),
@@ -368,7 +391,7 @@ async def update_secret(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='deletesecret')
+@mcp.tool(name='delete-secret')
 async def delete_secret(
     ctx: Context,
     secret_id: str = Field(..., description='Name or ARN of the secret to delete'),
@@ -429,7 +452,7 @@ async def delete_secret(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='restoresecret')
+@mcp.tool(name='restore-secret')
 async def restore_secret(
     ctx: Context,
     secret_id: str = Field(..., description='Name or ARN of the secret to restore'),
@@ -468,7 +491,7 @@ async def restore_secret(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='listsecrets')
+@mcp.tool(name='list-secrets')
 async def list_secrets(
     ctx: Context,
     max_results: int = Field(
@@ -480,10 +503,6 @@ async def list_secrets(
     name_prefix: Optional[str] = Field(
         None, 
         description='Filter secrets by name prefix'
-    ),
-    tag_filters: Optional[List[Dict[str, str]]] = Field(
-        None, 
-        description='Filter by tags as list of {"Key": "key", "Values": ["value1", "value2"]} objects'
     ),
     include_planned_deletion: bool = Field(
         False, 
@@ -500,6 +519,14 @@ async def list_secrets(
     down the results based on name prefix or tags.
     """
     try:
+        # Extract actual parameter values from Field objects
+        max_results = extract_field_value(max_results, DEFAULT_MAX_RESULTS)
+        name_prefix = extract_field_value(name_prefix, None)
+        include_planned_deletion = extract_field_value(include_planned_deletion, False)
+        region = extract_field_value(region, None)
+        
+        logger.info(f'list_secrets called with: max_results={max_results}, name_prefix={name_prefix}, include_planned_deletion={include_planned_deletion}, region={region}')
+        
         client = get_secrets_client(region)
         
         params = {
@@ -519,12 +546,7 @@ async def list_secrets(
         # Note: include_planned_deletion is handled by the API automatically
         # Secrets scheduled for deletion are excluded by default unless IncludePlannedDeletion is True
         
-        if tag_filters:
-            for tag_filter in tag_filters:
-                filters.append({
-                    'Key': f'tag-key:{tag_filter["Key"]}',
-                    'Values': tag_filter.get('Values', [])
-                })
+        # Tag filters temporarily disabled due to parameter handling issue
         
         if filters:
             params['Filters'] = filters
@@ -569,7 +591,7 @@ async def list_secrets(
         return ListSecretsResponse(secrets=[], next_token=None, total_count=0)
 
 
-@mcp.tool(name='describesecret')
+@mcp.tool(name='describe-secret')
 async def describe_secret(
     ctx: Context,
     secret_id: str = Field(..., description='Name or ARN of the secret'),
@@ -584,6 +606,10 @@ async def describe_secret(
     rotation configuration, version information, and tags.
     """
     try:
+        # Extract actual parameter values from Field objects
+        secret_id = extract_field_value(secret_id)
+        region = extract_field_value(region, None)
+        
         client = get_secrets_client(region)
         
         response = client.describe_secret(SecretId=secret_id)
@@ -629,7 +655,7 @@ async def describe_secret(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='getrandompassword')
+@mcp.tool(name='get-random-password')
 async def get_random_password(
     ctx: Context,
     password_length: int = Field(
@@ -677,6 +703,17 @@ async def get_random_password(
     to create secure passwords with customizable character sets and requirements.
     """
     try:
+        # Extract actual parameter values from Field objects
+        password_length = extract_field_value(password_length, 32)
+        exclude_characters = extract_field_value(exclude_characters, None)
+        exclude_numbers = extract_field_value(exclude_numbers, False)
+        exclude_punctuation = extract_field_value(exclude_punctuation, False)
+        exclude_uppercase = extract_field_value(exclude_uppercase, False)
+        exclude_lowercase = extract_field_value(exclude_lowercase, False)
+        include_space = extract_field_value(include_space, False)
+        require_each_included_type = extract_field_value(require_each_included_type, True)
+        region = extract_field_value(region, None)
+        
         config = RandomPasswordConfig(
             password_length=password_length,
             exclude_characters=exclude_characters,
@@ -724,7 +761,7 @@ async def get_random_password(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='enablerotation')
+@mcp.tool(name='enable-rotation')
 async def enable_rotation(
     ctx: Context,
     secret_id: str = Field(..., description='Name or ARN of the secret'),
@@ -790,7 +827,7 @@ async def enable_rotation(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='disablerotation')
+@mcp.tool(name='disable-rotation')
 async def disable_rotation(
     ctx: Context,
     secret_id: str = Field(..., description='Name or ARN of the secret'),
@@ -832,7 +869,7 @@ async def disable_rotation(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='rotatesecret')
+@mcp.tool(name='rotate-secret')
 async def rotate_secret(
     ctx: Context,
     secret_id: str = Field(..., description='Name or ARN of the secret'),
@@ -882,7 +919,7 @@ async def rotate_secret(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='tagresource')
+@mcp.tool(name='tag-resource')
 async def tag_resource(
     ctx: Context,
     secret_id: str = Field(..., description='Name or ARN of the secret'),
@@ -933,7 +970,7 @@ async def tag_resource(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='untagresource')
+@mcp.tool(name='untag-resource')
 async def untag_resource(
     ctx: Context,
     secret_id: str = Field(..., description='Name or ARN of the secret'),
@@ -980,7 +1017,7 @@ async def untag_resource(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='getresourcepolicy')
+@mcp.tool(name='get-resource-policy')
 async def get_resource_policy(
     ctx: Context,
     secret_id: str = Field(..., description='Name or ARN of the secret'),
@@ -1023,7 +1060,7 @@ async def get_resource_policy(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='putresourcepolicy')
+@mcp.tool(name='put-resource-policy')
 async def put_resource_policy(
     ctx: Context,
     secret_id: str = Field(..., description='Name or ARN of the secret'),
@@ -1091,7 +1128,7 @@ async def put_resource_policy(
         return SecretsManagerResponse(success=False, message=error_message)
 
 
-@mcp.tool(name='deleteresourcepolicy')
+@mcp.tool(name='delete-resource-policy')
 async def delete_resource_policy(
     ctx: Context,
     secret_id: str = Field(..., description='Name or ARN of the secret'),
