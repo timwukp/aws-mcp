@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "aws-secrets-manager": {
+      "command": "awslabs.aws-secrets-manager-mcp-server",
+      "env": {
+        "AWS_REGION": "us-east-1",
+        "FASTMCP_LOG_LEVEL": "INFO"
+      }
+    }
+  }
+}
